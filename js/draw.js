@@ -28,6 +28,19 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 
+// 生成随机颜色
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+// 设置随机初始颜色
+colorPicker.value = getRandomColor();
+
 // 初始化画布背景为白色
 ctx.fillStyle = 'white';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
