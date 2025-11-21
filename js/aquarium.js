@@ -624,7 +624,7 @@ function feedFish(fishContainer, fishData) {
         food.remove();
     }, 1000);
     
-    // 更新分数
+    // 更新分数 +1
     const fishInfo = fishScores.get(fishContainer);
     if (fishInfo) {
         fishInfo.score += 1;
@@ -667,7 +667,7 @@ function poopFish(fishContainer, fishData) {
         poop.remove();
     }, 1000);
     
-    // 更新分数
+    // 更新分数 -1
     const fishInfo = fishScores.get(fishContainer);
     if (fishInfo) {
         fishInfo.score -= 1;
@@ -683,11 +683,21 @@ function removeFish(fishContainer) {
     // 添加消失动画
     fishContainer.style.animation = 'fish-disappear 1s forwards';
     
+    const fishId = fishContainer.dataset.fishId;
+    
     // 动画结束后移除元素
     setTimeout(() => {
         fishContainer.remove();
         fishScores.delete(fishContainer);
         updateFishCount();
+        
+        // 从 Firebase 删除分数记录
+        if (fishId) {
+            scoresRef.child(fishId).remove();
+        }
+        
+        // 更新排行榜
+        updateLeaderboard();
     }, 1000);
 }
 
@@ -773,19 +783,20 @@ function updateFishScore(fishContainer, score) {
     // 检查是否需要移除鱼
     if (score <= -10) {
         removeFish(fishContainer);
-    } else {
-        // 保存分数到 Firebase
-        const fishInfo = fishScores.get(fishContainer);
-        if (fishInfo) {
-            // 从 DOM 获取 fishId（假设我们在创建时存储了）
-            const fishId = fishContainer.dataset.fishId;
-            if (fishId) {
-                saveFishScore(fishId, fishInfo.data, score);
-            }
-        }
-        // 更新排行榜
-        updateLeaderboard();
+        return;
     }
+    
+    // 保存分数到 Firebase
+    const fishInfo = fishScores.get(fishContainer);
+    if (fishInfo) {
+        const fishId = fishContainer.dataset.fishId;
+        if (fishId) {
+            saveFishScore(fishId, fishInfo.data, score);
+        }
+    }
+    
+    // 立即更新排行榜
+    updateLeaderboard();
 }
 
 // 获取指定时间范围的分数
@@ -880,6 +891,9 @@ function initLeaderboardTabs() {
 function initLeaderboard() {
     initLeaderboardTabs();
     updateLeaderboard();
-    // 每 10 秒更新一次排行榜
-    setInterval(updateLeaderboard, 10000);
+    
+    // 监听 Firebase 分数变化，实时更新排行榜
+    scoresRef.on('value', () => {
+        updateLeaderboard();
+    });
 }
