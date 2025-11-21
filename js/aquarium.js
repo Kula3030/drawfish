@@ -99,32 +99,47 @@ function displayFishes() {
 
 // 实时监听新鱼添加
 function listenForNewFishes() {
-    fishesRef.on('child_added', (snapshot) => {
-        // 检查是否已经初始化完成
-        if (!window.aquariumInitialized) return;
+    let loadedFishKeys = new Set();
+    
+    // 先记录所有已存在的鱼
+    fishesRef.once('value', (snapshot) => {
+        snapshot.forEach((childSnapshot) => {
+            loadedFishKeys.add(childSnapshot.key);
+        });
         
-        const fishData = snapshot.val();
-        const fishImg = document.createElement('img');
-        fishImg.src = fishData.image;
-        fishImg.className = 'fish';
-        fishImg.style.width = fishData.width + 'px';
-        fishImg.style.height = 'auto';
-        
-        // 添加摆尾动画
-        const swimDuration = (Math.random() * 1 + 0.8).toFixed(2);
-        fishImg.style.animation = `swim-wave ${swimDuration}s ease-in-out infinite`;
-        
-        // 随机初始位置
-        const startY = Math.random() * (window.innerHeight - 100);
-        const startX = Math.random() * window.innerWidth;
-        fishImg.style.top = startY + 'px';
-        fishImg.style.left = startX + 'px';
-        
-        aquarium.appendChild(fishImg);
-        animateFish(fishImg, 0);
-        
-        // 更新鱼数量
-        updateFishCount();
+        // 只监听新添加的鱼
+        fishesRef.on('child_added', (snapshot) => {
+            const fishKey = snapshot.key;
+            
+            // 如果是已经加载过的鱼，跳过
+            if (loadedFishKeys.has(fishKey)) return;
+            
+            // 标记为已加载
+            loadedFishKeys.add(fishKey);
+            
+            const fishData = snapshot.val();
+            const fishImg = document.createElement('img');
+            fishImg.src = fishData.image;
+            fishImg.className = 'fish';
+            fishImg.style.width = fishData.width + 'px';
+            fishImg.style.height = 'auto';
+            
+            // 添加摆尾动画
+            const swimDuration = (Math.random() * 1 + 0.8).toFixed(2);
+            fishImg.style.animation = `swim-wave ${swimDuration}s ease-in-out infinite`;
+            
+            // 随机初始位置
+            const startY = Math.random() * (window.innerHeight - 100);
+            const startX = Math.random() * window.innerWidth;
+            fishImg.style.top = startY + 'px';
+            fishImg.style.left = startX + 'px';
+            
+            aquarium.appendChild(fishImg);
+            animateFish(fishImg, 0);
+            
+            // 更新鱼数量
+            updateFishCount();
+        });
     });
 }
 
@@ -187,12 +202,7 @@ function init() {
     createBubbles();
     createSeaweed();
     displayFishes();
-    
-    // 标记初始化完成，开始监听新鱼
-    setTimeout(() => {
-        window.aquariumInitialized = true;
-        listenForNewFishes();
-    }, 1000);
+    listenForNewFishes();
 }
 
 // 页面加载时初始化
