@@ -2,40 +2,41 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0; url=aquarium.html">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飞机游戏</title>
+    <title>跳转到全球水族馆...</title>
     <style>
-        html, body {
+        body {
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, #e4a9d7, #f7c6a0, #f7d9aa);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(to bottom, #80A1BA 0%, #91C4C3 30%, #B4DEBD 60%, #FFF7DD 100%);
+            font-family: Arial, sans-serif;
+            color: #80A1BA;
         }
-        #world {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
+        .loading {
+            text-align: center;
         }
-        #world canvas {
-            display: block;
+        .loading h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        .loading p {
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
-    <div id="world"></div>
-    
-    <!-- 引入Three.js库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js"></script>
-    
-    <!-- 引入TweenLite动画库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenLite.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/easing/EasePack.min.js"></script>
-    
-    <!-- 主要的JavaScript代码 -->
-    <script src="js/index.js"></script>
+    <div class="loading">
+        <h1>🐠 正在进入全球水族馆...</h1>
+        <p>如果没有自动跳转，请 <a href="aquarium.html" style="color: #91C4C3;">点击这里</a></p>
+    </div>
+    <script>
+        // 立即跳转到水族馆页面
+        window.location.href = 'aquarium.html';
+    </script>
 </body>
 </html>
