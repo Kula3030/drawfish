@@ -41,10 +41,12 @@ function loadFishes(callback) {
 }
 
 // 更新鱼的数量显示
+// 更新鱼数量显示
 function updateFishCount() {
-    loadFishes((fishes) => {
-        fishCountElement.textContent = `水族馆里有 ${fishes.length} 条鱼`;
-    });
+    // 直接从 DOM 计算当前鱼的数量
+    const fishContainers = document.querySelectorAll('.fish-container');
+    fishCountElement.textContent = `水族馆里有 ${fishContainers.length} 条鱼`;
+    console.log('更新鱼数量:', fishContainers.length); // 调试日志
 }
 
 // 创建气泡效果
@@ -158,10 +160,14 @@ function createSeaweed() {
 
 // 显示所有鱼并让它们游动
 function displayFishes() {
-    loadFishes((fishes) => {
-        fishes.forEach((fishData, index) => {
-            createFishElement(fishData, index);
+    fishesRef.once('value', (snapshot) => {
+        snapshot.forEach((childSnapshot) => {
+            const fishData = childSnapshot.val();
+            fishData.id = childSnapshot.key; // 添加Firebase的key作为id
+            createFishElement(fishData, 0);
         });
+        // 加载完成后更新鱼数量
+        updateFishCount();
     });
 }
 
@@ -277,6 +283,7 @@ function listenForNewFishes() {
             loadedFishKeys.add(fishKey);
             
             const fishData = snapshot.val();
+            fishData.id = fishKey; // 添加Firebase的key作为id
             createFishElement(fishData, 0);
             
             // 更新鱼数量
@@ -678,26 +685,44 @@ function poopFish(fishContainer, fishData) {
 
 // 更新鱼的分数显示（删除旧版本，使用排行榜系统中的新版本）
 
-// 移除鱼
+// 移除鱼（完全删除）
 function removeFish(fishContainer) {
+    const fishId = fishContainer.dataset.fishId;
+    
+    console.log('移除鱼:', fishId); // 调试日志
+    
     // 添加消失动画
     fishContainer.style.animation = 'fish-disappear 1s forwards';
     
-    const fishId = fishContainer.dataset.fishId;
-    
-    // 动画结束后移除元素
+    // 动画结束后完全移除
     setTimeout(() => {
+        // 从DOM中移除
         fishContainer.remove();
-        fishScores.delete(fishContainer);
-        updateFishCount();
         
-        // 从 Firebase 删除分数记录
-        if (fishId) {
-            scoresRef.child(fishId).remove();
+        // 从fishScores中移除
+        fishScores.delete(fishContainer);
+        
+        // 从allFishes数组中移除
+        const fishIndex = allFishes.findIndex(f => f.container === fishContainer);
+        if (fishIndex !== -1) {
+            allFishes.splice(fishIndex, 1);
         }
+        
+        // 从Firebase删除鱼的数据
+        if (fishId) {
+            // 删除分数记录
+            scoresRef.child(fishId).remove();
+            // 删除鱼本身的数据
+            fishesRef.child(fishId).remove();
+        }
+        
+        // 更新鱼数量
+        updateFishCount();
         
         // 更新排行榜
         updateLeaderboard();
+        
+        console.log('鱼已完全移除，剩余:', allFishes.length); // 调试日志
     }, 1000);
 }
 
@@ -770,7 +795,13 @@ function saveFishScore(fishId, fishData, score) {
         date: new Date(timestamp).toISOString().split('T')[0] // YYYY-MM-DD
     };
     
-    scoresRef.child(fishId).set(scoreData);
+    console.log('保存分数到Firebase:', fishId, score, scoreData); // 调试日志
+    
+    scoresRef.child(fishId).set(scoreData).then(() => {
+        console.log('分数保存成功:', fishId, score);
+    }).catch((error) => {
+        console.error('分数保存失败:', error);
+    });
 }
 
 // 更新鱼的分数显示（修改版）
@@ -780,6 +811,8 @@ function updateFishScore(fishContainer, score) {
         scoreElement.textContent = score;
     }
     
+    console.log('更新鱼的分数:', score); // 调试日志
+    
     // 检查是否需要移除鱼
     if (score <= -10) {
         removeFish(fishContainer);
@@ -788,8 +821,12 @@ function updateFishScore(fishContainer, score) {
     
     // 保存分数到 Firebase
     const fishInfo = fishScores.get(fishContainer);
+    console.log('鱼的信息:', fishInfo); // 调试日志
+    
     if (fishInfo) {
         const fishId = fishContainer.dataset.fishId;
+        console.log('鱼的ID:', fishId); // 调试日志
+        
         if (fishId) {
             saveFishScore(fishId, fishInfo.data, score);
         }
@@ -803,6 +840,8 @@ function updateFishScore(fishContainer, score) {
 function getScoresForPeriod(period, callback) {
     scoresRef.once('value', (snapshot) => {
         const scoresData = snapshot.val();
+        console.log('从Firebase获取的分数数据:', scoresData); // 调试日志
+        
         if (!scoresData) {
             callback([]);
             return;
@@ -817,6 +856,8 @@ function getScoresForPeriod(period, callback) {
             ...data
         }));
         
+        console.log('处理后的分数数组:', scores); // 调试日志
+        
         // 根据周期过滤
         if (period === 'today') {
             scores = scores.filter(s => s.date === today);
@@ -827,6 +868,8 @@ function getScoresForPeriod(period, callback) {
         
         // 按分数降序排序
         scores.sort((a, b) => b.score - a.score);
+        
+        console.log('排序后的分数（前10）:', scores.slice(0, 10)); // 调试日志
         
         // 只取前 10 名
         callback(scores.slice(0, 10));
@@ -852,6 +895,10 @@ function updateLeaderboard() {
             
             const scoreClass = scoreData.score > 0 ? 'positive' : scoreData.score < 0 ? 'negative' : '';
             
+            // 计算🐟和💩的数量
+            const fishCount = scoreData.score > 0 ? scoreData.score : 0;
+            const poopCount = scoreData.score < 0 ? Math.abs(scoreData.score) : 0;
+            
             return `
                 <div class="leaderboard-item">
                     <div class="leaderboard-rank ${rankClass}">${rank}</div>
@@ -859,8 +906,8 @@ function updateLeaderboard() {
                     <div class="leaderboard-info">
                         <div class="leaderboard-name">鱼 #${scoreData.fishId.substring(0, 6)}</div>
                         <div class="leaderboard-stats">
-                            <span>🐟 ${scoreData.score > 0 ? scoreData.score : 0}</span>
-                            <span>💩 ${scoreData.score < 0 ? Math.abs(scoreData.score) : 0}</span>
+                            <span>🐟 ${fishCount}</span>
+                            <span>💩 ${poopCount}</span>
                         </div>
                     </div>
                     <div class="leaderboard-score ${scoreClass}">${scoreData.score}</div>
