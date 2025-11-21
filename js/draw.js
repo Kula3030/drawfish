@@ -1,0 +1,222 @@
+// 画鱼页面逻辑
+const canvas = document.getElementById('drawCanvas');
+const ctx = canvas.getContext('2d');
+const colorPicker = document.getElementById('colorPicker');
+const brushSize = document.getElementById('brushSize');
+const brushSizeValue = document.getElementById('brushSizeValue');
+const clearButton = document.getElementById('clearButton');
+const saveButton = document.getElementById('saveButton');
+const backButton = document.getElementById('backButton');
+
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+
+// 初始化画布背景为白色
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// 开始绘画
+function startDrawing(e) {
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    lastX = e.clientX - rect.left;
+    lastY = e.clientY - rect.top;
+}
+
+// 绘画中
+function draw(e) {
+    if (!isDrawing) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const currentX = e.clientX - rect.left;
+    const currentY = e.clientY - rect.top;
+    
+    ctx.strokeStyle = colorPicker.value;
+    ctx.lineWidth = brushSize.value;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(currentX, currentY);
+    ctx.stroke();
+    
+    lastX = currentX;
+    lastY = currentY;
+}
+
+// 停止绘画
+function stopDrawing() {
+    isDrawing = false;
+}
+
+// 触摸设备支持
+function startDrawingTouch(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    lastX = touch.clientX - rect.left;
+    lastY = touch.clientY - rect.top;
+    isDrawing = true;
+}
+
+function drawTouch(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const currentX = touch.clientX - rect.left;
+    const currentY = touch.clientY - rect.top;
+    
+    ctx.strokeStyle = colorPicker.value;
+    ctx.lineWidth = brushSize.value;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(currentX, currentY);
+    ctx.stroke();
+    
+    lastX = currentX;
+    lastY = currentY;
+}
+
+function stopDrawingTouch(e) {
+    e.preventDefault();
+    isDrawing = false;
+}
+
+// 鼠标事件
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseout', stopDrawing);
+
+// 触摸事件
+canvas.addEventListener('touchstart', startDrawingTouch);
+canvas.addEventListener('touchmove', drawTouch);
+canvas.addEventListener('touchend', stopDrawingTouch);
+
+// 笔刷大小变化
+brushSize.addEventListener('input', (e) => {
+    brushSizeValue.textContent = e.target.value;
+});
+
+// 清空画布
+clearButton.addEventListener('click', () => {
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+});
+
+// 自动抠图：去除白色背景
+function cropAndRemoveWhiteBackground() {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imageData.data;
+    
+    // 找到绘画内容的边界
+    let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+    let hasContent = false;
+    
+    for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+            const index = (y * canvas.width + x) * 4;
+            const r = pixels[index];
+            const g = pixels[index + 1];
+            const b = pixels[index + 2];
+            
+            // 检查是否是非白色像素（容差处理）
+            if (r < 250 || g < 250 || b < 250) {
+                hasContent = true;
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+        }
+    }
+    
+    if (!hasContent) {
+        return null;
+    }
+    
+    // 添加一些边距
+    const padding = 10;
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = Math.min(canvas.width, maxX + padding);
+    maxY = Math.min(canvas.height, maxY + padding);
+    
+    const width = maxX - minX;
+    const height = maxY - minY;
+    
+    // 创建新的画布用于抠图
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    // 复制裁剪区域
+    const croppedImageData = ctx.getImageData(minX, minY, width, height);
+    const croppedPixels = croppedImageData.data;
+    
+    // 去除白色背景（设置为透明）
+    for (let i = 0; i < croppedPixels.length; i += 4) {
+        const r = croppedPixels[i];
+        const g = croppedPixels[i + 1];
+        const b = croppedPixels[i + 2];
+        
+        // 如果接近白色，设置为透明
+        if (r > 240 && g > 240 && b > 240) {
+            croppedPixels[i + 3] = 0; // 设置 alpha 为 0（完全透明）
+        }
+    }
+    
+    tempCtx.putImageData(croppedImageData, 0, 0);
+    
+    return tempCanvas.toDataURL('image/png');
+}
+
+// 保存鱼到 localStorage
+saveButton.addEventListener('click', () => {
+    // 抠图并去除白色背景
+    const croppedImageDataURL = cropAndRemoveWhiteBackground();
+    
+    if (!croppedImageDataURL) {
+        alert('请先画一条鱼再保存哦！🐟');
+        return;
+    }
+    
+    // 获取现有的鱼数据
+    let fishes = JSON.parse(localStorage.getItem('aquariumFishes') || '[]');
+    
+    // 添加新鱼（随机大小）
+    const fishSize = Math.random() * 100 + 80; // 80-180px
+    fishes.push({
+        image: croppedImageDataURL,
+        width: fishSize,
+        timestamp: Date.now()
+    });
+    
+    // 保存到 localStorage
+    try {
+        localStorage.setItem('aquariumFishes', JSON.stringify(fishes));
+        alert('🎉 你的鱼已经放入水族馆啦！');
+        window.location.href = 'aquarium.html';
+    } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+            alert('⚠️ 水族馆已经满了！请清理一些旧的鱼。');
+        } else {
+            alert('保存失败，请重试！');
+        }
+    }
+});
+
+// 返回水族馆
+backButton.addEventListener('click', () => {
+    if (confirm('确定要返回吗？未保存的画作将丢失！')) {
+        window.location.href = 'aquarium.html';
+    }
+});

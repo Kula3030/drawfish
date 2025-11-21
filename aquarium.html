@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球水族馆 - 看看大家画的鱼</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #001a33 0%, #003d66 50%, #004d80 100%);
+        }
+        
+        #aquarium {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .fish {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+        }
+        
+        .fish:hover {
+            transform: scale(1.2) !important;
+            z-index: 1000;
+        }
+        
+        /* 鱼的摇尾动画 */
+        @keyframes swim-wave {
+            0%, 100% {
+                transform: skewY(0deg);
+            }
+            25% {
+                transform: skewY(3deg);
+            }
+            75% {
+                transform: skewY(-3deg);
+            }
+        }
+        
+        .bubble {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float-up 4s infinite ease-in-out;
+        }
+        
+        @keyframes float-up {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translateY(-50vh) translateX(20px);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(0);
+                opacity: 0;
+            }
+        }
+        
+        #controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        #controls h2 {
+            color: #004d80;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        #controls p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        #drawButton {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        #drawButton:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        #fishCount {
+            margin-top: 15px;
+            font-size: 16px;
+            color: #004d80;
+            font-weight: bold;
+        }
+        
+        .seaweed {
+            position: absolute;
+            bottom: 0;
+            width: 30px;
+            background: linear-gradient(to top, #0a4d2e, #1a7a4a);
+            border-radius: 50% 50% 0 0;
+            animation: sway 3s infinite ease-in-out;
+            transform-origin: bottom center;
+        }
+        
+        @keyframes sway {
+            0%, 100% {
+                transform: rotate(-5deg);
+            }
+            50% {
+                transform: rotate(5deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="aquarium">
+        <!-- 鱼会在这里游动 -->
+    </div>
+    
+    <div id="controls">
+        <h2>🐠 全球水族馆</h2>
+        <p>看看全世界网友画的鱼！</p>
+        <button id="drawButton">🎨 画一条鱼</button>
+        <div id="fishCount">水族馆里有 0 条鱼</div>
+    </div>
+
+    <script src="js/aquarium.js"></script>
+</body>
+</html>
