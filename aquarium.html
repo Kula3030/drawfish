@@ -12,11 +12,18 @@
         }
         
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
             overflow: hidden;
-            background: linear-gradient(to bottom, #001a33 0%, #003d66 50%, #004d80 100%);
+            /* 清新配色渐变 */
+            background: linear-gradient(to bottom, 
+                #80A1BA 0%,      /* 淡蓝灰 - 水面 */
+                #91C4C3 30%,     /* 薄荷绿 */
+                #B4DEBD 60%,     /* 淡绿 - 主水域 */
+                #FFF7DD 100%     /* 米黄 - 海底 */
+            );
         }
         
+        /* 水族馆主容器 */
         #aquarium {
             position: relative;
             width: 100vw;
@@ -24,119 +31,820 @@
             overflow: hidden;
         }
         
-        .fish {
+        /* 水波纹覆盖层 */
+        #aquarium::before {
+            content: '';
             position: absolute;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(180, 222, 189, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 40%, rgba(145, 196, 195, 0.15) 0%, transparent 50%);
+            animation: water-shimmer 15s infinite ease-in-out;
+            pointer-events: none;
+            z-index: 1;
         }
         
-        .fish:hover {
-            transform: scale(1.2) !important;
+        @keyframes water-shimmer {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* 光线投射效果 */
+        #aquarium::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -10%;
+            width: 120%;
+            height: 100%;
+            background: 
+                linear-gradient(180deg, 
+                    rgba(255, 255, 255, 0) 0%,
+                    rgba(255, 247, 221, 0.15) 20%,
+                    rgba(255, 255, 255, 0) 40%,
+                    rgba(180, 222, 189, 0.1) 60%,
+                    rgba(255, 255, 255, 0) 80%
+                );
+            transform: skewY(-5deg);
+            animation: light-rays 20s infinite ease-in-out;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        @keyframes light-rays {
+            0%, 100% { 
+                transform: skewY(-5deg) translateX(0); 
+                opacity: 0.4;
+            }
+            50% { 
+                transform: skewY(-5deg) translateX(30px); 
+                opacity: 0.7;
+            }
+        }
+        
+        .fish-container {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+        
+        .fish {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        /* 悬停时鱼的反应 */
+        .fish-container:hover .fish {
+            transform: scale(1.15) !important;
+            filter: brightness(1.2) drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+        }
+        
+        .fish-container:hover {
             z-index: 1000;
         }
         
-        /* 鱼的摇尾动画 */
+        /* 更自然的鱼摇尾动画 */
         @keyframes swim-wave {
             0%, 100% {
-                transform: skewY(0deg);
+                transform: skewY(0deg) translateX(0);
             }
             25% {
-                transform: skewY(3deg);
+                transform: skewY(2deg) translateX(2px);
+            }
+            50% {
+                transform: skewY(0deg) translateX(0);
             }
             75% {
-                transform: skewY(-3deg);
+                transform: skewY(-2deg) translateX(-2px);
             }
         }
         
         .bubble {
             position: absolute;
-            width: 20px;
-            height: 20px;
-            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
             border-radius: 50%;
-            opacity: 0.6;
-            animation: float-up 4s infinite ease-in-out;
+            background: radial-gradient(
+                circle at 35% 35%, 
+                rgba(255, 247, 221, 0.9), 
+                rgba(180, 222, 189, 0.5) 50%,
+                rgba(145, 196, 195, 0.3) 70%,
+                transparent
+            );
+            box-shadow: 
+                inset -2px -2px 4px rgba(128, 161, 186, 0.4),
+                0 0 10px rgba(180, 222, 189, 0.4);
+            pointer-events: none;
+            z-index: 5;
         }
-        
-        @keyframes float-up {
-            0% {
-                transform: translateY(0) translateX(0);
-                opacity: 0.6;
-            }
-            50% {
-                transform: translateY(-50vh) translateX(20px);
-                opacity: 0.8;
-            }
-            100% {
-                transform: translateY(-100vh) translateX(0);
-                opacity: 0;
-            }
-        }
+
         
         #controls {
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 30px;
+            left: 30px;
             z-index: 2000;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 247, 221, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 
+                0 8px 32px rgba(128, 161, 186, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(180, 222, 189, 0.5);
+            max-width: 280px;
         }
         
         #controls h2 {
-            color: #004d80;
-            margin-bottom: 15px;
-            font-size: 24px;
+            background: linear-gradient(135deg, #80A1BA 0%, #91C4C3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: bold;
         }
         
         #controls p {
-            color: #666;
-            margin-bottom: 10px;
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.6;
         }
         
         #drawButton {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #91C4C3 0%, #B4DEBD 100%);
             color: white;
             border: none;
             padding: 15px 30px;
             font-size: 18px;
-            border-radius: 30px;
+            border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            transition: all 0.3s ease;
+            box-shadow: 
+                0 4px 15px rgba(145, 196, 195, 0.4),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             width: 100%;
+            font-weight: bold;
+            letter-spacing: 0.5px;
         }
         
         #drawButton:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            transform: translateY(-3px);
+            box-shadow: 
+                0 8px 25px rgba(180, 222, 189, 0.6),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        #drawButton:active {
+            transform: translateY(-1px);
+            box-shadow: 
+                0 4px 15px rgba(145, 196, 195, 0.4),
+                inset 0 2px 4px rgba(0, 0, 0, 0.2);
         }
         
         #fishCount {
             margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(145, 196, 195, 0.3);
             font-size: 16px;
-            color: #004d80;
+            color: #80A1BA;
             font-weight: bold;
+            text-align: center;
         }
         
-        .seaweed {
+        /* 排行榜样式 */
+        #leaderboard {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 2000;
+            background: rgba(255, 247, 221, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 
+                0 8px 32px rgba(128, 161, 186, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(180, 222, 189, 0.5);
+            max-width: 320px;
+            min-width: 280px;
+        }
+        
+        #leaderboard h2 {
+            background: linear-gradient(135deg, #80A1BA 0%, #91C4C3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .leaderboard-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            background: rgba(180, 222, 189, 0.2);
+            padding: 4px;
+            border-radius: 12px;
+        }
+        
+        .leaderboard-tab {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: #80A1BA;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .leaderboard-tab:hover {
+            background: rgba(145, 196, 195, 0.3);
+        }
+        
+        .leaderboard-tab.active {
+            background: linear-gradient(135deg, #91C4C3 0%, #B4DEBD 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(145, 196, 195, 0.3);
+        }
+        
+        .leaderboard-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(180, 222, 189, 0.3);
+        }
+        
+        .leaderboard-item:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(145, 196, 195, 0.2);
+        }
+        
+        .leaderboard-rank {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .leaderboard-rank.rank-1 {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+        }
+        
+        .leaderboard-rank.rank-2 {
+            background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(192, 192, 192, 0.4);
+        }
+        
+        .leaderboard-rank.rank-3 {
+            background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(205, 127, 50, 0.4);
+        }
+        
+        .leaderboard-rank.rank-other {
+            background: rgba(180, 222, 189, 0.3);
+            color: #80A1BA;
+        }
+        
+        .leaderboard-fish {
+            width: 50px;
+            height: auto;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        
+        .leaderboard-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .leaderboard-name {
+            font-size: 14px;
+            color: #80A1BA;
+            font-weight: 600;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .leaderboard-stats {
+            display: flex;
+            gap: 8px;
+            font-size: 12px;
+            color: #91C4C3;
+        }
+        
+        .leaderboard-score {
+            font-size: 18px;
+            font-weight: bold;
+            color: #80A1BA;
+            flex-shrink: 0;
+        }
+        
+        .leaderboard-score.positive {
+            color: #91C4C3;
+        }
+        
+        .leaderboard-score.negative {
+            color: #e07a5f;
+        }
+        
+        .leaderboard-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #91C4C3;
+            font-size: 14px;
+        }
+        
+        /* 滚动条样式 */
+        .leaderboard-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .leaderboard-list::-webkit-scrollbar-track {
+            background: rgba(180, 222, 189, 0.1);
+            border-radius: 3px;
+        }
+        
+        .leaderboard-list::-webkit-scrollbar-thumb {
+            background: rgba(145, 196, 195, 0.5);
+            border-radius: 3px;
+        }
+        
+        .leaderboard-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(145, 196, 195, 0.7);
+        }
+        
+        /* === 海草系统升级 === */
+        
+        /* 海草容器 */
+        .seaweed-container {
             position: absolute;
             bottom: 0;
-            width: 30px;
-            background: linear-gradient(to top, #0a4d2e, #1a7a4a);
-            border-radius: 50% 50% 0 0;
-            animation: sway 3s infinite ease-in-out;
+            transform-origin: bottom center;
+            z-index: 3;
+        }
+        
+        /* 海草主茎 */
+        .seaweed-stem {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            background: linear-gradient(
+                to top,
+                #5a8f7b 0%,
+                #6fa88d 30%,
+                #80c19f 60%,
+                #91d4b0 100%
+            );
+            border-radius: 2px;
+            animation: stem-sway 4s infinite ease-in-out;
             transform-origin: bottom center;
         }
         
-        @keyframes sway {
+        /* 海草叶片 */
+        .seaweed-leaf {
+            position: absolute;
+            background: linear-gradient(
+                135deg,
+                rgba(107, 161, 137, 0.9) 0%,
+                rgba(128, 193, 159, 0.8) 50%,
+                rgba(145, 212, 176, 0.7) 100%
+            );
+            border-radius: 50% 80% 50% 80% / 80% 50% 80% 50%;
+            box-shadow: 
+                inset 2px 2px 4px rgba(255, 255, 255, 0.2),
+                inset -1px -1px 3px rgba(0, 0, 0, 0.3),
+                0 2px 4px rgba(0, 0, 0, 0.2);
+            transform-origin: bottom center;
+            animation: leaf-sway 3s infinite ease-in-out;
+        }
+        
+        /* 叶片中脉 */
+        .seaweed-leaf::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 10%;
+            bottom: 10%;
+            width: 1px;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.3) 0%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 100%
+            );
+            transform: translateX(-50%);
+        }
+        
+        /* 叶片高光 */
+        .seaweed-leaf::after {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 30%;
+            width: 40%;
+            height: 30%;
+            background: radial-gradient(
+                ellipse at center,
+                rgba(255, 255, 255, 0.3) 0%,
+                transparent 70%
+            );
+            border-radius: 50%;
+            filter: blur(2px);
+        }
+        
+        /* 不同位置的叶片样式 */
+        .seaweed-leaf.left {
+            left: -8px;
+            transform-origin: bottom right;
+        }
+        
+        .seaweed-leaf.right {
+            right: -8px;
+            transform-origin: bottom left;
+        }
+        
+        /* 主茎摇摆动画 */
+        @keyframes stem-sway {
             0%, 100% {
-                transform: rotate(-5deg);
+                transform: translateX(-50%) rotate(-6deg);
+            }
+            25% {
+                transform: translateX(-50%) rotate(-2deg);
             }
             50% {
+                transform: translateX(-50%) rotate(6deg);
+            }
+            75% {
+                transform: translateX(-50%) rotate(2deg);
+            }
+        }
+        
+        /* 叶片摇摆动画 */
+        @keyframes leaf-sway {
+            0%, 100% {
+                transform: rotate(0deg) scaleX(1);
+            }
+            25% {
+                transform: rotate(-8deg) scaleX(0.95);
+            }
+            50% {
+                transform: rotate(0deg) scaleX(1);
+            }
+            75% {
+                transform: rotate(8deg) scaleX(0.95);
+            }
+        }
+        
+        /* 海草类型变化 */
+        .seaweed-container.type-1 .seaweed-leaf {
+            background: linear-gradient(
+                135deg,
+                rgba(90, 143, 123, 0.9) 0%,
+                rgba(107, 161, 137, 0.8) 50%,
+                rgba(128, 193, 159, 0.7) 100%
+            );
+        }
+        
+        .seaweed-container.type-2 .seaweed-leaf {
+            background: linear-gradient(
+                135deg,
+                rgba(128, 193, 159, 0.9) 0%,
+                rgba(145, 212, 176, 0.8) 50%,
+                rgba(163, 227, 189, 0.7) 100%
+            );
+            border-radius: 50% 90% 50% 90% / 90% 50% 90% 50%;
+        }
+        
+        .seaweed-container.type-3 .seaweed-leaf {
+            background: linear-gradient(
+                135deg,
+                rgba(107, 161, 137, 0.85) 0%,
+                rgba(120, 180, 150, 0.75) 50%,
+                rgba(135, 200, 165, 0.65) 100%
+            );
+            border-radius: 60% 70% 60% 70% / 70% 60% 70% 60%;
+        }
+        
+        /* 海藻（另一种植物） */
+        .kelp-container {
+            position: absolute;
+            bottom: 0;
+            z-index: 3;
+        }
+        
+        .kelp-strand {
+            position: absolute;
+            bottom: 0;
+            width: 8px;
+            background: linear-gradient(
+                to top,
+                #5a8f7b 0%,
+                #6fa88d 20%,
+                #80c19f 40%,
+                #91d4b0 60%,
+                #a3e3c1 80%,
+                #b4f0d2 100%
+            );
+            border-radius: 4px;
+            box-shadow: 
+                inset 1px 0 2px rgba(255, 255, 255, 0.2),
+                inset -1px 0 2px rgba(0, 0, 0, 0.3),
+                2px 0 6px rgba(0, 0, 0, 0.2);
+            animation: kelp-wave 5s infinite ease-in-out;
+            transform-origin: bottom center;
+        }
+        
+        @keyframes kelp-wave {
+            0%, 100% {
+                transform: rotate(0deg);
+                clip-path: polygon(
+                    40% 0%, 60% 0%,
+                    65% 20%, 70% 40%, 65% 60%, 70% 80%, 60% 100%,
+                    40% 100%, 30% 80%, 35% 60%, 30% 40%, 35% 20%
+                );
+            }
+            25% {
+                transform: rotate(-5deg);
+                clip-path: polygon(
+                    35% 0%, 65% 0%,
+                    70% 20%, 65% 40%, 70% 60%, 65% 80%, 65% 100%,
+                    35% 100%, 35% 80%, 30% 60%, 35% 40%, 30% 20%
+                );
+            }
+            50% {
+                transform: rotate(0deg);
+                clip-path: polygon(
+                    40% 0%, 60% 0%,
+                    65% 20%, 70% 40%, 65% 60%, 70% 80%, 60% 100%,
+                    40% 100%, 30% 80%, 35% 60%, 30% 40%, 35% 20%
+                );
+            }
+            75% {
                 transform: rotate(5deg);
+                clip-path: polygon(
+                    35% 0%, 65% 0%,
+                    70% 20%, 65% 40%, 70% 60%, 65% 80%, 65% 100%,
+                    35% 100%, 35% 80%, 30% 60%, 35% 40%, 30% 20%
+                );
+            }
+        }
+        
+        /* 水草丛（低矮植物） */
+        .grass-clump {
+            position: absolute;
+            bottom: 0;
+            display: flex;
+            gap: 2px;
+            z-index: 3;
+        }
+        
+        .grass-blade {
+            width: 3px;
+            background: linear-gradient(
+                to top,
+                #6fa88d 0%,
+                #91d4b0 50%,
+                #b4f0d2 100%
+            );
+            border-radius: 2px 2px 0 0;
+            animation: grass-sway 2s infinite ease-in-out;
+            transform-origin: bottom center;
+            box-shadow: 1px 0 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        @keyframes grass-sway {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+        
+        /* === 动态光线效果 === */
+        
+        /* 水面光线投射（焦散效果 Caustics） */
+        .caustics-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 30%),
+                radial-gradient(ellipse at 60% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 25%),
+                radial-gradient(ellipse at 40% 70%, rgba(255, 255, 255, 0.12) 0%, transparent 35%);
+            background-size: 200% 200%;
+            animation: caustics-move 15s infinite ease-in-out;
+            pointer-events: none;
+            z-index: 6;
+            mix-blend-mode: screen;
+        }
+        
+        @keyframes caustics-move {
+            0%, 100% {
+                background-position: 0% 0%, 50% 50%, 100% 100%;
+                opacity: 0.4;
+            }
+            33% {
+                background-position: 30% 20%, 70% 60%, 20% 80%;
+                opacity: 0.6;
+            }
+            66% {
+                background-position: 60% 40%, 20% 70%, 80% 30%;
+                opacity: 0.5;
+            }
+        }
+        
+        /* 鱼的投影（投射到海底） */
+        .fish-container {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            filter: drop-shadow(0 20px 15px rgba(0, 0, 0, 0.3));
+        }
+        
+        /* 动态阴影根据鱼的高度调整 */
+        .fish-container[data-depth="shallow"] {
+            filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.2));
+        }
+        
+        .fish-container[data-depth="deep"] {
+            filter: drop-shadow(0 30px 20px rgba(0, 0, 0, 0.4));
+        }
+        
+        /* 自定义鼠标指针 - 鱼钩 */
+        #aquarium {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path d="M 16 2 Q 16 8 16 12 Q 16 16 12 18 Q 8 20 6 24 Q 5 26 7 27 Q 9 28 10 26 Q 12 22 16 20 Q 20 18 20 12 Q 20 8 20 2" fill="none" stroke="%23888" stroke-width="2"/><circle cx="8" cy="26" r="2" fill="%23888"/></svg>'), auto;
+        }
+        
+        /* 评分系统样式 */
+        .rating-container {
+            position: absolute;
+            top: -45px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1001;
+            pointer-events: none;
+        }
+        
+        .rating-container button {
+            pointer-events: all;
+        }
+        
+        .fish-container:hover .rating-container {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .rating-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 4px 10px rgba(0, 0, 0, 0.25),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(5px);
+        }
+        
+        .rating-btn:hover {
+            transform: scale(1.15) translateY(-2px);
+            box-shadow: 
+                0 6px 15px rgba(0, 0, 0, 0.3),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .rating-btn:active {
+            transform: scale(1.05);
+        }
+        
+        .positive-btn {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #8B4513;
+        }
+        
+        .negative-btn {
+            background: linear-gradient(135deg, #8B4513 0%, #654321 100%);
+            color: #FFFFFF;
+        }
+        
+        .fish-score {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1001;
+            pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .fish-container:hover .fish-score {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+        
+        /* 动画元素 */
+        .food-particle {
+            position: absolute;
+            font-size: 24px;
+            z-index: 1000;
+            pointer-events: none;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+        
+        .poop-particle {
+            position: absolute;
+            font-size: 24px;
+            z-index: 1000;
+            pointer-events: none;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+        
+        /* 鱼粮样式 - 已移除 */
+        
+        /* 喂食动画 */
+        @keyframes feed-animation {
+            0% {
+                transform: translateY(0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-120px) scale(0.3) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* 扔大便动画 */
+        @keyframes poop-animation {
+            0% {
+                transform: translate(0, 0) rotate(0deg) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) rotate(720deg) scale(0.5);
+                opacity: 0;
+            }
+        }
+        
+        /* 鱼消失动画 */
+        @keyframes fish-disappear {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0);
+                opacity: 0;
             }
         }
     </style>
@@ -151,6 +859,19 @@
         <p>看看全世界网友画的鱼！</p>
         <button id="drawButton">🎨 画一条鱼</button>
         <div id="fishCount">水族馆里有 0 条鱼</div>
+    </div>
+    
+    <!-- 排行榜 -->
+    <div id="leaderboard">
+        <h2>🏆 鱼类排行榜</h2>
+        <div class="leaderboard-tabs">
+            <button class="leaderboard-tab active" data-period="all">总榜</button>
+            <button class="leaderboard-tab" data-period="week">本周</button>
+            <button class="leaderboard-tab" data-period="today">今日</button>
+        </div>
+        <div class="leaderboard-list" id="leaderboardList">
+            <div class="leaderboard-empty">暂无排名数据</div>
+        </div>
     </div>
 
     <!-- Firebase SDK -->
