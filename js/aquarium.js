@@ -1,18 +1,38 @@
+// Firebase 配置
+const firebaseConfig = {
+  apiKey: "AIzaSyASN_WBHPE2m3EfmcYjvkmcgE1pc4EcAB0",
+  authDomain: "globalaquarium-b6bcc.firebaseapp.com",
+  databaseURL: "https://globalaquarium-b6bcc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "globalaquarium-b6bcc",
+  storageBucket: "globalaquarium-b6bcc.firebasestorage.app",
+  messagingSenderId: "512626935672",
+  appId: "1:512626935672:web:b30b79813f45443b702a8d"
+};
+
+// 初始化 Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const fishesRef = database.ref('fishes');
+
 // 水族馆主逻辑
 const aquarium = document.getElementById('aquarium');
 const drawButton = document.getElementById('drawButton');
 const fishCountElement = document.getElementById('fishCount');
 
-// 从 localStorage 加载所有鱼的数据
-function loadFishes() {
-    const fishes = JSON.parse(localStorage.getItem('aquariumFishes') || '[]');
-    return fishes;
+// 从 Firebase 加载所有鱼的数据
+function loadFishes(callback) {
+    fishesRef.once('value', (snapshot) => {
+        const fishesData = snapshot.val();
+        const fishes = fishesData ? Object.values(fishesData) : [];
+        if (callback) callback(fishes);
+    });
 }
 
 // 更新鱼的数量显示
 function updateFishCount() {
-    const fishes = loadFishes();
-    fishCountElement.textContent = `水族馆里有 ${fishes.length} 条鱼`;
+    loadFishes((fishes) => {
+        fishCountElement.textContent = `水族馆里有 ${fishes.length} 条鱼`;
+    });
 }
 
 // 创建气泡效果
@@ -51,9 +71,39 @@ function createSeaweed() {
 
 // 显示所有鱼并让它们游动
 function displayFishes() {
-    const fishes = loadFishes();
-    
-    fishes.forEach((fishData, index) => {
+    loadFishes((fishes) => {
+        fishes.forEach((fishData, index) => {
+            const fishImg = document.createElement('img');
+            fishImg.src = fishData.image;
+            fishImg.className = 'fish';
+            fishImg.style.width = fishData.width + 'px';
+            fishImg.style.height = 'auto';
+            
+            // 添加摆尾动画
+            const swimDuration = (Math.random() * 1 + 0.8).toFixed(2); // 0.8-1.8秒
+            fishImg.style.animation = `swim-wave ${swimDuration}s ease-in-out infinite`;
+            
+            // 随机初始位置
+            const startY = Math.random() * (window.innerHeight - 100);
+            const startX = Math.random() * window.innerWidth;
+            fishImg.style.top = startY + 'px';
+            fishImg.style.left = startX + 'px';
+            
+            aquarium.appendChild(fishImg);
+            
+            // 让鱼游动
+            animateFish(fishImg, index);
+        });
+    });
+}
+
+// 实时监听新鱼添加
+function listenForNewFishes() {
+    fishesRef.on('child_added', (snapshot) => {
+        // 检查是否已经初始化完成
+        if (!window.aquariumInitialized) return;
+        
+        const fishData = snapshot.val();
         const fishImg = document.createElement('img');
         fishImg.src = fishData.image;
         fishImg.className = 'fish';
@@ -61,7 +111,7 @@ function displayFishes() {
         fishImg.style.height = 'auto';
         
         // 添加摆尾动画
-        const swimDuration = (Math.random() * 1 + 0.8).toFixed(2); // 0.8-1.8秒
+        const swimDuration = (Math.random() * 1 + 0.8).toFixed(2);
         fishImg.style.animation = `swim-wave ${swimDuration}s ease-in-out infinite`;
         
         // 随机初始位置
@@ -71,9 +121,10 @@ function displayFishes() {
         fishImg.style.left = startX + 'px';
         
         aquarium.appendChild(fishImg);
+        animateFish(fishImg, 0);
         
-        // 让鱼游动
-        animateFish(fishImg, index);
+        // 更新鱼数量
+        updateFishCount();
     });
 }
 
@@ -136,14 +187,13 @@ function init() {
     createBubbles();
     createSeaweed();
     displayFishes();
+    
+    // 标记初始化完成，开始监听新鱼
+    setTimeout(() => {
+        window.aquariumInitialized = true;
+        listenForNewFishes();
+    }, 1000);
 }
 
 // 页面加载时初始化
 window.addEventListener('load', init);
-
-// 监听 localStorage 变化（当有新鱼被添加时）
-window.addEventListener('storage', (e) => {
-    if (e.key === 'aquariumFishes') {
-        location.reload(); // 重新加载页面以显示新鱼
-    }
-});

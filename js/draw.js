@@ -1,3 +1,19 @@
+// Firebase 配置
+const firebaseConfig = {
+  apiKey: "AIzaSyASN_WBHPE2m3EfmcYjvkmcgE1pc4EcAB0",
+  authDomain: "globalaquarium-b6bcc.firebaseapp.com",
+  databaseURL: "https://globalaquarium-b6bcc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "globalaquarium-b6bcc",
+  storageBucket: "globalaquarium-b6bcc.firebasestorage.app",
+  messagingSenderId: "512626935672",
+  appId: "1:512626935672:web:b30b79813f45443b702a8d"
+};
+
+// 初始化 Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const fishesRef = database.ref('fishes');
+
 // 画鱼页面逻辑
 const canvas = document.getElementById('drawCanvas');
 const ctx = canvas.getContext('2d');
@@ -179,7 +195,7 @@ function cropAndRemoveWhiteBackground() {
     return tempCanvas.toDataURL('image/png');
 }
 
-// 保存鱼到 localStorage
+// 保存鱼到 Firebase
 saveButton.addEventListener('click', () => {
     // 抠图并去除白色背景
     const croppedImageDataURL = cropAndRemoveWhiteBackground();
@@ -189,29 +205,30 @@ saveButton.addEventListener('click', () => {
         return;
     }
     
-    // 获取现有的鱼数据
-    let fishes = JSON.parse(localStorage.getItem('aquariumFishes') || '[]');
+    // 显示保存中提示
+    saveButton.disabled = true;
+    saveButton.textContent = '💾 保存中...';
     
-    // 添加新鱼（随机大小）
+    // 添加新鱼到 Firebase（随机大小）
     const fishSize = Math.random() * 100 + 80; // 80-180px
-    fishes.push({
+    const newFish = {
         image: croppedImageDataURL,
         width: fishSize,
         timestamp: Date.now()
-    });
+    };
     
-    // 保存到 localStorage
-    try {
-        localStorage.setItem('aquariumFishes', JSON.stringify(fishes));
-        alert('🎉 你的鱼已经放入水族馆啦！');
-        window.location.href = 'aquarium.html';
-    } catch (e) {
-        if (e.name === 'QuotaExceededError') {
-            alert('⚠️ 水族馆已经满了！请清理一些旧的鱼。');
-        } else {
-            alert('保存失败，请重试！');
-        }
-    }
+    // 保存到 Firebase
+    fishesRef.push(newFish)
+        .then(() => {
+            alert('🎉 你的鱼已经放入全球水族馆啦！世界各地的网友都能看到！');
+            window.location.href = 'aquarium.html';
+        })
+        .catch((error) => {
+            console.error('保存失败：', error);
+            alert('⚠️ 保存失败，请检查网络连接后重试！');
+            saveButton.disabled = false;
+            saveButton.textContent = '💾 把鱼放入水族馆';
+        });
 });
 
 // 返回水族馆

@@ -13,6 +13,37 @@ var scene,
 		camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH,
 		renderer, container;
 
+// Game state
+function resetGame(){
+	game = {
+		speed:0,
+		initSpeed:.00035,
+		baseSpeed:.00035,
+		targetBaseSpeed:.00035,
+		speedLastFrame:0,
+		score:0,
+		energy:100,
+		ratioSpeedDistance:50,
+		energy:100,
+		ratioSpeedEnergy:3,
+		level:1,
+		planeFallSpeed:.001,
+		planeSpeed:0,
+		planeCollisionDisplacementX:0,
+		planeCollisionSpeedX:0,
+		planeCollisionDisplacementY:0,
+		planeCollisionSpeedY:0,
+		planeMinSpeed:1.2,
+		planeMaxSpeed:1.6,
+		planeSpeed:0,
+		planeCollisionDisplacementX:0,
+		planeCollisionSpeedX:0,
+		planeCollisionDisplacementY:0,
+		planeCollisionSpeedY:0,
+	};
+	fieldDistance = 0;
+}
+
 // 对象变量
 var hemisphereLight, shadowLight, ambientLight;
 var sea;
@@ -20,14 +51,21 @@ var airplane;
 var sky;
 var particlesPool = [];
 var particlesInUse = [];
+var enemiesPool = [];
+var enemiesInUse = [];
+var game;
+var fieldDistance = 0;
+var lastEnemySpawnTime = 0;
 
 // 初始化函数
 window.addEventListener('load', init, false);
 
 function init(event){
+	resetGame();
 	createScene();
 	createLights();
 	createParticlesPool();
+	createEnemiesPool();
 	createPlane();
 	createSea();
 	createSky();
@@ -372,6 +410,64 @@ Particle.prototype.explode = function(pos){
 	}});
 }
 
+// Define Enemy object (rock-like obstacle):
+var Enemy = function(){
+	// Create a container for the rock
+	this.mesh = new THREE.Object3D();
+	
+	// Random color for variety
+	var colors = [0xe74c3c, 0x8e44ad, 0x3498db, 0xe67e22, 0x95a5a6];
+	var color = colors[Math.floor(Math.random() * colors.length)];
+	
+	// Create irregular rock shape by combining multiple boxes
+	var nBlocs = 3 + Math.floor(Math.random() * 3);
+	for (var i = 0; i < nBlocs; i++){
+		// Random size for each block
+		var s = 3 + Math.random() * 5;
+		var geom = new THREE.BoxGeometry(s, s, s);
+		var mat = new THREE.MeshPhongMaterial({
+			color: color,
+			shading: THREE.FlatShading
+		});
+		
+		var m = new THREE.Mesh(geom, mat);
+		
+		// Random position to create irregular shape
+		m.position.x = (Math.random() - 0.5) * 8;
+		m.position.y = (Math.random() - 0.5) * 8;
+		m.position.z = (Math.random() - 0.5) * 8;
+		
+		// Random rotation
+		m.rotation.x = Math.random() * Math.PI;
+		m.rotation.y = Math.random() * Math.PI;
+		m.rotation.z = Math.random() * Math.PI;
+		
+		m.castShadow = true;
+		m.receiveShadow = true;
+		
+		this.mesh.add(m);
+	}
+	
+	this.angle = 0;
+	this.dist = 0;
+}
+
+Enemy.prototype.fly = function(){
+	var _this = this;
+	var targetX = -300;
+	var speed = 3;
+	
+	// Add rotation animation
+	TweenLite.to(this.mesh.rotation, speed, {x:Math.PI*2, y:Math.PI*2, ease:Linear.easeNone});
+	
+	TweenLite.to(this.mesh.position, speed, {x:targetX, ease:Linear.easeNone, onComplete:function(){
+		_this.mesh.visible = false;
+		scene.remove(_this.mesh);
+		enemiesInUse.splice(enemiesInUse.indexOf(_this), 1);
+		enemiesPool.unshift(_this);
+	}});
+}
+
 // Define a Plane object:
 var AirPlane = function() {
 	
@@ -464,6 +560,32 @@ function createParticlesPool(){
 	for (var i=0; i<10; i++){
 		var particle = new Particle();
 		particlesPool.push(particle);
+	}
+}
+
+function createEnemiesPool(){
+	for (var i=0; i<10; i++){
+		var enemy = new Enemy();
+		enemiesPool.push(enemy);
+	}
+}
+
+function spawnEnemies(){
+	var nEnemies = 1;
+	for (var i=0; i<nEnemies; i++){
+		var enemy;
+		if (enemiesPool.length) {
+			enemy = enemiesPool.pop();
+		}else{
+			enemy = new Enemy();
+		}
+		scene.add(enemy.mesh);
+		enemy.mesh.visible = true;
+		enemy.mesh.position.x = 200;
+		enemy.mesh.position.y = Math.random()*100 + 30;
+		enemy.mesh.position.z = Math.random()*50 - 25;
+		enemy.fly();
+		enemiesInUse.push(enemy);
 	}
 }
 
@@ -586,8 +708,69 @@ function loop(){
 	// update the plane on each frame
 	updatePlane();
 	
+	// Spawn enemies periodically (every 2 seconds)
+	var currentTime = Date.now();
+	if (currentTime - lastEnemySpawnTime > 2000){
+		spawnEnemies();
+		lastEnemySpawnTime = currentTime;
+	}
+	
+	// Check collisions
+	checkCollisions();
+	
+	// Update score display
+	updateScoreDisplay();
+	
 	renderer.render(scene, camera);
 	requestAnimationFrame(loop);
+}
+
+function checkCollisions(){
+	var planePos = airplane.mesh.position;
+	
+	// Check particle vs enemy collisions
+	for (var i = particlesInUse.length - 1; i >= 0; i--){
+		var particle = particlesInUse[i];
+		if (!particle.mesh.visible) continue;
+		
+		for (var j = enemiesInUse.length - 1; j >= 0; j--){
+			var enemy = enemiesInUse[j];
+			if (!enemy.mesh.visible) continue;
+			
+			var dx = particle.mesh.position.x - enemy.mesh.position.x;
+			var dy = particle.mesh.position.y - enemy.mesh.position.y;
+			var dz = particle.mesh.position.z - enemy.mesh.position.z;
+			var dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+			
+			if (dist < 12){
+				// Hit!
+				particle.mesh.visible = false;
+				enemy.mesh.visible = false;
+				scene.remove(enemy.mesh);
+				enemiesInUse.splice(j, 1);
+				enemiesPool.unshift(enemy);
+				game.score += 10;
+				break;
+			}
+		}
+	}
+}
+
+function updateScoreDisplay(){
+	var scoreDiv = document.getElementById('score');
+	if (!scoreDiv){
+		scoreDiv = document.createElement('div');
+		scoreDiv.id = 'score';
+		scoreDiv.style.position = 'absolute';
+		scoreDiv.style.top = '20px';
+		scoreDiv.style.left = '20px';
+		scoreDiv.style.color = 'white';
+		scoreDiv.style.fontSize = '24px';
+		scoreDiv.style.fontFamily = 'Arial';
+		scoreDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+		document.body.appendChild(scoreDiv);
+	}
+	scoreDiv.innerHTML = 'Score: ' + game.score;
 }
 
 var mousePos={x:0, y:0};
@@ -642,6 +825,9 @@ function updatePlane(){
 
 	airplane.propeller.rotation.x += 0.3;
 	airplane.pilot.updateHairs();
+	
+	// Update game speed
+	game.speed = game.baseSpeed;
 }
 
 function normalize(v,vmin,vmax,tmin, tmax){
