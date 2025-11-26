@@ -24,9 +24,17 @@ const clearButton = document.getElementById('clearButton');
 const saveButton = document.getElementById('saveButton');
 const backButton = document.getElementById('backButton');
 
+// 命名弹窗元素
+const nameModal = document.getElementById('nameModal');
+const fishNameInput = document.getElementById('fishNameInput');
+const confirmNameButton = document.getElementById('confirmNameButton');
+const cancelNameButton = document.getElementById('cancelNameButton');
+const errorMessage = document.getElementById('errorMessage');
+
 let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
+let currentFishImage = null; // 存储当前鱼的图片
 
 // 生成随机颜色
 function getRandomColor() {
@@ -218,30 +226,83 @@ saveButton.addEventListener('click', () => {
         return;
     }
     
-    // 显示保存中提示
-    saveButton.disabled = true;
-    saveButton.textContent = '💾 保存中...';
+    // 存储鱼的图片，显示命名弹窗
+    currentFishImage = croppedImageDataURL;
+    nameModal.style.display = 'flex';
+    fishNameInput.value = '';
+    errorMessage.textContent = '';
+    fishNameInput.focus();
+});
+
+// 取消命名
+cancelNameButton.addEventListener('click', () => {
+    nameModal.style.display = 'none';
+    currentFishImage = null;
+});
+
+// 检查名字是否已存在
+function checkNameExists(name, callback) {
+    fishesRef.orderByChild('name').equalTo(name).once('value', (snapshot) => {
+        callback(snapshot.exists());
+    });
+}
+
+// 确认命名并保存
+confirmNameButton.addEventListener('click', () => {
+    const fishName = fishNameInput.value.trim();
     
-    // 添加新鱼到 Firebase（随机大小）
-    const fishSize = Math.random() * 100 + 80; // 80-180px
-    const newFish = {
-        image: croppedImageDataURL,
-        width: fishSize,
-        timestamp: Date.now()
-    };
+    // 验证名字
+    if (!fishName) {
+        errorMessage.textContent = '⚠️ 请输入鱼的名字！';
+        return;
+    }
     
-    // 保存到 Firebase
-    fishesRef.push(newFish)
-        .then(() => {
-            alert('🎉 你的鱼已经放入全球水族馆啦！世界各地的网友都能看到！');
-            window.location.href = 'aquarium.html';
-        })
-        .catch((error) => {
-            console.error('保存失败：', error);
-            alert('⚠️ 保存失败，请检查网络连接后重试！');
-            saveButton.disabled = false;
-            saveButton.textContent = '💾 把鱼放入水族馆';
-        });
+    if (fishName.length < 2) {
+        errorMessage.textContent = '⚠️ 名字太短啦，至少2个字哦！';
+        return;
+    }
+    
+    // 检查名字是否重复
+    errorMessage.textContent = '⚙️ 检查名字是否可用...';
+    confirmNameButton.disabled = true;
+    
+    checkNameExists(fishName, (exists) => {
+        if (exists) {
+            errorMessage.textContent = '⚠️ 这个名字已经被其他鱼用了，换一个吧！';
+            confirmNameButton.disabled = false;
+            return;
+        }
+        
+        // 名字可用，保存鱼
+        errorMessage.textContent = '💾 保存中...';
+        
+        const fishSize = Math.random() * 100 + 80; // 80-180px
+        const newFish = {
+            name: fishName,
+            image: currentFishImage,
+            width: fishSize,
+            timestamp: Date.now()
+        };
+        
+        // 使用名字作为Firebase的key
+        fishesRef.child(fishName).set(newFish)
+            .then(() => {
+                alert(`🎉 你的鱼「${fishName}」已经放入全球水族馆啦！世界各地的网友都能看到！`);
+                window.location.href = 'aquarium.html';
+            })
+            .catch((error) => {
+                console.error('保存失败：', error);
+                errorMessage.textContent = '⚠️ 保存失败，请检查网络后重试！';
+                confirmNameButton.disabled = false;
+            });
+    });
+});
+
+// 按回车键确认
+fishNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        confirmNameButton.click();
+    }
 });
 
 // 返回水族馆

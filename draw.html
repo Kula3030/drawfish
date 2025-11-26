@@ -140,6 +140,66 @@
             margin-bottom: 15px;
             font-size: 14px;
         }
+        
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .modal-content h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .modal-content input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -167,6 +227,19 @@
         <div id="actions">
             <button id="backButton">← 返回水族馆</button>
             <button id="saveButton">💾 把鱼放入水族馆</button>
+        </div>
+    </div>
+    
+    <!-- 命名弹窗 -->
+    <div id="nameModal" class="modal">
+        <div class="modal-content">
+            <h2>🐟 给你的鱼起个名字吧！</h2>
+            <div id="errorMessage" class="error-message"></div>
+            <input type="text" id="fishNameInput" placeholder="输入鱼的名字（必须唯一）" maxlength="20">
+            <div class="modal-buttons">
+                <button id="cancelNameButton" style="background: #868e96; color: white;">取消</button>
+                <button id="confirmNameButton" style="background: #51cf66; color: white;">确认</button>
+            </div>
         </div>
     </div>
 

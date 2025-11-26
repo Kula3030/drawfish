@@ -179,9 +179,10 @@ function createFishElement(fishData, index) {
     fishContainer.style.left = '0px';
     fishContainer.style.top = '0px';
     
-    // 存储 fishId（使用 Firebase key 或生成一个）
-    const fishId = fishData.id || `fish_${Date.now()}_${index}`;
+    // 使用鱼的名字作为ID（如果没有名字，使用Firebase key）
+    const fishId = fishData.name || fishData.id || `fish_${Date.now()}_${index}`;
     fishContainer.dataset.fishId = fishId;
+    fishContainer.dataset.fishName = fishData.name || '无名鱼'; // 存储鱼名
     
     const fishImg = document.createElement('img');
     fishImg.src = fishData.image;
@@ -788,6 +789,7 @@ function saveFishScore(fishId, fishData, score) {
     const timestamp = Date.now();
     const scoreData = {
         fishId: fishId,
+        fishName: fishData.name || null, // 添加鱼名
         fishImage: fishData.image,
         fishWidth: fishData.width,
         score: score,
@@ -832,8 +834,7 @@ function updateFishScore(fishContainer, score) {
         }
     }
     
-    // 立即更新排行榜
-    updateLeaderboard();
+    // 不在这里调用updateLeaderboard，让Firebase监听器自动更新
 }
 
 // 获取指定时间范围的分数
@@ -851,12 +852,29 @@ function getScoresForPeriod(period, callback) {
         const today = new Date(now).toISOString().split('T')[0];
         const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
         
-        let scores = Object.entries(scoresData).map(([id, data]) => ({
-            id,
-            ...data
-        }));
+        // 使用Map去重，按fishId（鱼名）去重
+        const scoresMap = new Map();
         
-        console.log('处理后的分数数组:', scores); // 调试日志
+        Object.entries(scoresData).forEach(([id, data]) => {
+            // Firebase的key就是fishId（鱼名）
+            const uniqueKey = id;
+            
+            console.log('处理分数记录:', id, 'fishName:', data.fishName, '分数:', data.score);
+            
+            // 直接使用fishId作为唯一key，每个名字只对应一条鱼
+            if (!scoresMap.has(uniqueKey)) {
+                scoresMap.set(uniqueKey, {
+                    id: id,
+                    ...data,
+                    fishId: data.fishId || id
+                });
+            }
+        });
+        
+        let scores = Array.from(scoresMap.values());
+        
+        console.log('处理后的分数数组:', scores);
+        console.log('分数数量:', scores.length, '原始数量:', Object.keys(scoresData).length);
         
         // 根据周期过滤
         if (period === 'today') {
@@ -869,7 +887,7 @@ function getScoresForPeriod(period, callback) {
         // 按分数降序排序
         scores.sort((a, b) => b.score - a.score);
         
-        console.log('排序后的分数（前10）:', scores.slice(0, 10)); // 调试日志
+        console.log('排序后的分数（前10）:', scores.slice(0, 10));
         
         // 只取前 10 名
         callback(scores.slice(0, 10));
@@ -904,7 +922,7 @@ function updateLeaderboard() {
                     <div class="leaderboard-rank ${rankClass}">${rank}</div>
                     <img src="${scoreData.fishImage}" class="leaderboard-fish" alt="fish">
                     <div class="leaderboard-info">
-                        <div class="leaderboard-name">鱼 #${scoreData.fishId.substring(0, 6)}</div>
+                        <div class="leaderboard-name">${scoreData.fishName || '鱼 #' + scoreData.fishId.substring(0, 6)}</div>
                         <div class="leaderboard-stats">
                             <span>🐟 ${fishCount}</span>
                             <span>💩 ${poopCount}</span>
